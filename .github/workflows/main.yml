@@ -20,12 +20,21 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Select Latest Installed Xcode
+        run: |
+          LATEST_XCODE=$(ls -d /Applications/Xcode*.app | sort -V | tail -n 1)
+          echo "Selecting Xcode: $LATEST_XCODE"
+          sudo xcode-select -s "$LATEST_XCODE/Contents/Developer"
+          xcodebuild -version
+
       - name: Build Xcode Project
         run: |
-          # If the repository was extracted with a parent folder, adjust working directory if needed
           if [ -d "HermesEnabler-main" ]; then
             cd HermesEnabler-main
           fi
+
+          # Downgrade objectVersion (e.g. 110 -> 56) so current Xcode can open it
+          sed -i '' 's/objectVersion = [0-9]*;/objectVersion = 56;/g' "HermesEnabler2.xcodeproj/project.pbxproj"
 
           xcodebuild clean build \
             -project "HermesEnabler2.xcodeproj" \
@@ -49,3 +58,4 @@ jobs:
         with:
           name: HermesEnabler2-IPA
           path: ${{ github.workspace }}/HermesEnabler2.ipa
+ 
