@@ -33,23 +33,27 @@ jobs:
             cd HermesEnabler-main
           fi
 
-          # Downgrade objectVersion (e.g. 110 -> 56) so current Xcode can open it
+          # Downgrade objectVersion (110 -> 56) so current Xcode can open it
           sed -i '' 's/objectVersion = [0-9]*;/objectVersion = 56;/g' "HermesEnabler2.xcodeproj/project.pbxproj"
 
           xcodebuild clean build \
             -project "HermesEnabler2.xcodeproj" \
             -scheme "HermesEnabler2" \
             -configuration Release \
-            -sdk iphoneos \
+            -sdk watchos \
+            -destination "generic/platform=watchOS" \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
 
       - name: Package .app into .ipa
         run: |
           mkdir -p "$RUNNER_TEMP/Payload"
-          cp -r "$RUNNER_TEMP/DerivedData/Build/Products/Release-iphoneos/HermesEnabler2.app" "$RUNNER_TEMP/Payload/"
+          APP_PATH=$(find "$RUNNER_TEMP/DerivedData/Build/Products" -name "HermesEnabler2.app" | head -n 1)
+          echo "Found built app at: $APP_PATH"
+          cp -r "$APP_PATH" "$RUNNER_TEMP/Payload/"
           cd "$RUNNER_TEMP"
           zip -r "$GITHUB_WORKSPACE/HermesEnabler2.ipa" Payload
 
@@ -58,4 +62,3 @@ jobs:
         with:
           name: HermesEnabler2-IPA
           path: ${{ github.workspace }}/HermesEnabler2.ipa
- 
