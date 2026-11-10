@@ -1,0 +1,51 @@
+name: Build HermesEnabler2 IPA
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build-ipa:
+    name: Build Unsigned IPA
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build Xcode Project
+        run: |
+          # If the repository was extracted with a parent folder, adjust working directory if needed
+          if [ -d "HermesEnabler-main" ]; then
+            cd HermesEnabler-main
+          fi
+
+          xcodebuild clean build \
+            -project "HermesEnabler2.xcodeproj" \
+            -scheme "HermesEnabler2" \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Package .app into .ipa
+        run: |
+          mkdir -p "$RUNNER_TEMP/Payload"
+          cp -r "$RUNNER_TEMP/DerivedData/Build/Products/Release-iphoneos/HermesEnabler2.app" "$RUNNER_TEMP/Payload/"
+          cd "$RUNNER_TEMP"
+          zip -r "$GITHUB_WORKSPACE/HermesEnabler2.ipa" Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HermesEnabler2-IPA
+          path: ${{ github.workspace }}/HermesEnabler2.ipa
